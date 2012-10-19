@@ -6,15 +6,80 @@ require 'nokogiri'
 require 'pp'
 require 'pacer'
 require 'pacer-neo4j'
+require 'pacer-dex'
+require 'pacer-orient'
+require 'benchmark'
 
-def prep_graph(g)
+def index_graph(g)
+  Benchmark.realtime do
+    g.create_key_index 'type', :vertex
+    g.create_key_index 'org_name', :vertex
+    g.create_key_index 'last_name', :vertex
+    if g.respond_to? :key_index_cache
+      g.key_index_cache :vertex, 'type', 100000
+      g.key_index_cache :vertex, 'org_name', 100000
+      g.key_index_cache :vertex, 'last_name', 100000
+    end
+  end
+end
+
+def import_dex
+  g = Pacer.dex "dex/#{Time.now.to_i}"
+  t = Benchmark.realtime do
+    parse 'ipgb20120103.xml', g
+  end
+  puts
+  puts "dex: #{ t }"
+  g
+end
+
+def import_neo
+  g = Pacer.neo4j "neo/#{Time.now.to_i}"
   g.safe_transactions = false
-  g.create_key_index 'type', :vertex
-  g.create_key_index 'org_name', :vertex
-  g.create_key_index 'last_name', :vertex
-  g.key_index_cache :vertex, 'type', 100000
-  g.key_index_cache :vertex, 'org_name', 100000
-  g.key_index_cache :vertex, 'last_name', 100000
+  t = Benchmark.realtime do
+    parse 'ipgb20120103.xml', g
+  end
+  puts
+  puts "neo: #{ t }"
+  g
+end
+
+def import_neo_batch
+  n = "neo/#{Time.now.to_i}"
+  g = Pacer.neo_batch n
+  t = Benchmark.realtime do
+    begin
+      parse 'ipgb20120103.xml', g
+    ensure
+      g.shutdown
+    end
+  end
+  puts
+  puts "neo batch: #{ t }"
+  Pacer.neo4j n
+end
+
+def import_orient
+  g = Pacer.orient "orient/#{Time.now.to_i}"
+  t = Benchmark.realtime do
+    parse 'ipgb20120103.xml', g
+  end
+  puts
+  puts "orient: #{ t }"
+  g
+end
+
+def xml_only
+  g = Object.new
+  def g.method_missing(*args)
+    yield if block_given?
+    nil
+  end
+  t = Benchmark.realtime do
+    parse 'ipgb20120103.xml', g
+  end
+  puts
+  puts "xml: #{ t }"
 end
 
 # this is the entry point
@@ -35,9 +100,9 @@ def parse(file, g)
       if line[0...5] == '<?xml'
         g.transaction do
           parse_document xml.join, g if xml
-          puts
-          puts " -> #{ n } / #{ lines } --- #{ n / lines * 100 }"
+          print '.'
         end
+        return if n/lines > 0.1
         xml = [line]
       else
         xml << line
@@ -63,7 +128,9 @@ def patent(el, g)
   add_edge p, :publication, publication(el, g)
   citations(p, el, g)
   # skipped related documents
-  p.add_edges_to :applicant, applicants(el, g)
+  applicants(el, g).each do |a|
+    add_edge p, :applicant, a
+  end
   agents(p, el, g)
   examiners(p, el, g)
   p
