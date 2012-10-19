@@ -8,7 +8,6 @@ require 'pacer'
 require 'pacer-neo4j'
 
 def prep_graph(g)
-
   g.safe_transactions = false
   g.create_key_index 'type', :vertex
   g.create_key_index 'org_name', :vertex
@@ -16,7 +15,6 @@ def prep_graph(g)
   g.key_index_cache :vertex, 'type', 100000
   g.key_index_cache :vertex, 'org_name', 100000
   g.key_index_cache :vertex, 'last_name', 100000
-  g.use_wrapper com.tinkerpop.blueprints.util.wrappers.batch.BatchGraph
 end
 
 # this is the entry point
@@ -34,7 +32,7 @@ def parse(file, g)
       n += 1
       if line[0...5] == '<?xml'
         g.transaction do
-          parse_document n, xml.join, g if xml
+          parse_document xml.join, g if xml
           puts
           puts " -> #{ n } / #{ lines } --- #{ n / lines * 100 }"
         end
@@ -46,27 +44,24 @@ def parse(file, g)
   end
 end
 
-def parse_document(n, str, g)
+def parse_document(str, g)
   doc = Nokogiri::XML str
-  patent n, doc.at_css('us-bibliographic-data-grant'), g
+  patent doc.at_css('us-bibliographic-data-grant'), g
 end
 
-def patent(n, el, g)
-  p = g.vertex("patent #{n}") || g.create_vertex("patent #{n}",
-                                                 type: "patent",
-                                                 title: text(el, 'invention-title'),
-                                                 code: text(el, 'us-application-series-code'),
-                                                 length: integer(el, 'length-of-grant'),
-                                                 num_claims: integer(el, 'number-of-claims'),
-                                                 num_sheets: integer(el, 'number-of-drawing-sheets'),
-                                                 num_figures: integer(el, 'number-of-figures'))
+def patent(el, g)
+  p = g.create_vertex(type: "patent",
+                      title: text(el, 'invention-title'),
+                      code: text(el, 'us-application-series-code'),
+                      length: integer(el, 'length-of-grant'),
+                      num_claims: integer(el, 'number-of-claims'),
+                      num_sheets: integer(el, 'number-of-drawing-sheets'),
+                      num_figures: integer(el, 'number-of-figures'))
   add_edge p, :application, application(el, g)
   add_edge p, :publication, publication(el, g)
   citations(p, el, g)
   # skipped related documents
-  applicants(el, g).each do |a|
-    add_edge p, :applicant, a
-  end
+  p.add_edges_to :applicant, applicants(el, g)
   agents(p, el, g)
   examiners(p, el, g)
   p
@@ -132,14 +127,15 @@ def document(type, el, g)
   d = el.at_css('document-id')
   if d
     doc_number = text(d, 'doc-number')
-    doc = g.vertex(doc_number) || g.create_vertex(doc_number,
-                                          doc_number: doc_number,
+    doc = $docs.fetch(doc_number) do
+      $docs[doc_number] = g.create_vertex(doc_number: doc_number,
                                           type: "document",
                                           document_type: type,
                                           country: text(d, 'country'),
                                           kind: text(d, 'kind'),
                                           date: text(d, 'date'),
                                           other: text(d, 'othercit'))
+    end
     add_edge author(d, g), :wrote, doc
     doc
   end
@@ -148,22 +144,23 @@ end
 def entity(el, g)
   e = el.at_css('addressbook')
   if e
-    id = [text(e, 'orgname'), text(e, 'last-name'), text(e, 'first-name')]
-    g.vertex(id) or g.create_vertex(id, type: "entity",
-                    org_name: text(e, 'orgname'),
-                    last_name: text(e, 'last-name'),
-                    first_name: text(e, 'first-name'),
-                    department: text(e, 'department'),
-                    city: text(e, 'address city'),
-                    state: text(e, 'address state'),
-                    country: text(e, 'address country'))
+    basic = {
+      type: "entity",
+      org_name: text(e, 'orgname'),
+      last_name: text(e, 'last-name'),
+      first_name: text(e, 'first-name')
+    }
+    g.v(basic).first || g.create_vertex(basic.merge(department: text(e, 'department'),
+                                              city: text(e, 'address city'),
+                                              state: text(e, 'address state'),
+                                              country: text(e, 'address country')))
   end
 end
 
 def author(el, g)
   name = text(el, 'name')
-  if name
-    g.vertex(name) or g.create_vertex(name, type: "author", name: name)
+  $authors.fetch(name) do
+    $authors[name] = g.create_vertex type: "author", name: name
   end
 end
 
