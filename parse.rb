@@ -31,6 +31,22 @@ def import_batch
   g
 end
 
+def import_batch_batch
+  n = "neo/#{Time.now.to_i}"
+  g = Pacer.neo_batch n
+  w = g.use_wrapper com.tinkerpop.blueprints.util.wrappers.batch.BatchGraph
+  t = Benchmark.realtime do
+    begin
+      parse 'ipgb20120103.xml', w
+    ensure
+      g.shutdown
+    end
+  end
+  puts
+  puts "batch (neo batch): #{ t }"
+  Pacer.neo4j n
+end
+
 # this is the entry point
 def parse(file, g)
   lines = 0
