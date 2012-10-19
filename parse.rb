@@ -23,6 +23,7 @@ def parse(file, g)
   $docs = {}
   $authors = {}
   $examiners = {}
+  $entities = {}
   File.open file do |f|
     lines = f.each_line.count.to_f
   end
@@ -161,10 +162,12 @@ def entity(el, g)
       last_name: text(e, 'last-name'),
       first_name: text(e, 'first-name')
     }
-    g.v(basic).first || g.create_vertex(basic.merge(department: text(e, 'department'),
-                                              city: text(e, 'address city'),
-                                              state: text(e, 'address state'),
-                                              country: text(e, 'address country')))
+    $entities.fetch(basic) do
+      g.create_vertex(basic.merge(department: text(e, 'department'),
+                                  city: text(e, 'address city'),
+                                  state: text(e, 'address state'),
+                                  country: text(e, 'address country')))
+    end
   end
 end
 
