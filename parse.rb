@@ -6,6 +6,7 @@ require 'nokogiri'
 require 'pp'
 require 'pacer'
 require 'pacer-neo4j'
+require 'benchmark'
 
 def prep_graph(g)
 
@@ -17,6 +18,17 @@ def prep_graph(g)
   g.key_index_cache :vertex, 'org_name', 100000
   g.key_index_cache :vertex, 'last_name', 100000
   g.use_wrapper com.tinkerpop.blueprints.util.wrappers.batch.BatchGraph
+end
+
+def import_batch
+  g = Pacer.neo4j "neo/#{Time.now.to_i}"
+  w = g.use_wrapper com.tinkerpop.blueprints.util.wrappers.batch.BatchGraph
+  t = Benchmark.realtime do
+    parse 'ipgb20120103.xml', w
+  end
+  puts
+  puts "batch (neo): #{ t }"
+  g
 end
 
 # this is the entry point
@@ -35,9 +47,9 @@ def parse(file, g)
       if line[0...5] == '<?xml'
         g.transaction do
           parse_document n, xml.join, g if xml
-          puts
-          puts " -> #{ n } / #{ lines } --- #{ n / lines * 100 }"
+          print '.'
         end
+        return if n/lines > 0.1
         xml = [line]
       else
         xml << line
