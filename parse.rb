@@ -22,6 +22,7 @@ def parse(file, g)
   lines = 0
   $docs = {}
   $authors = {}
+  $examiners = {}
   File.open file do |f|
     lines = f.each_line.count.to_f
   end
@@ -113,15 +114,25 @@ end
 
 def examiners(p, el, g)
   el.css('primary-examiner').each do |e|
-    ent = entity(e, g)
+    ent = examiner(e, g)
     add_edge ent, :examined, p if ent
   end
   el.css('assistant-examiner').each do |e|
-    ent = entity(e, g)
+    ent = examiner(e, g)
     add_edge ent, :examined, p if ent
   end
 end
 
+def examiner(e, g)
+  data = {
+    first_name: text(e, 'first-name'),
+    last_name: text(e, 'last-name'),
+  }
+  $examiners.fetch(data) do
+    $examiners[data] = g.create_vertex(data.merge(type: 'examiner',
+                                                  department: integer(e, 'department')))
+  end
+end
 
 def document(type, el, g)
   d = el.at_css('document-id')
