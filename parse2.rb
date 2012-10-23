@@ -7,32 +7,35 @@ require 'pacer-dex'
 require 'pacer-orient'
 require 'benchmark'
 
-# this is the entry point
-def parse(file, g)
-  lines = 0
-  $docs = {}
-  $authors = {}
-  $examiners = {}
-  $entities = {}
-  File.open file do |f|
-    lines = f.each_line.count.to_f
+class XmlChunks
+  include Enumerable
+
+  attr_reader :file, :is_full_chunk
+
+  def initialize(file, is_full_chunk = nil)
+    @file = file
+    @is_full_chunk = is_full_chunk || proc do |lines, line|
+      line[0...5] == '<?xml'
+    end
   end
-  File.open file do |f|
-    xml = nil
-    n = 0
-    f.each_line do |line|
-      n += 1
-      if line[0...5] == '<?xml'
-        g.transaction do
-          parse_document xml.join, g if xml
-          print '.'
+
+  def each
+    return to_enum unless block_given?
+    File.open file do |f|
+      lines = nil
+      f.each_line do |line|
+        if lines.nil? or is_full_chunk.call lines, line
+          yield Nokogiri::XML lines.join if lines
+          lines = [line]
+        else
+          lines << line
         end
-        return if n/lines > 0.1
-        xml = [line]
-      else
-        xml << line
       end
     end
+  end
+
+  def trees(key_map = {})
+    to_route.map { |node| node.tree(key_map) }
   end
 end
 
