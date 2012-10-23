@@ -40,15 +40,18 @@ class XmlChunks
 end
 
 class Nokogiri::XML::Node
-  def tree
-    c = children.map(&:tree).compact
+  def tree(key_map = {})
+    c = children.map { |x| x.tree(key_map) }.compact
     if c.empty?
-      name
+      key_map.fetch(name, name)
     else
       ct = {}
       texts = []
       attrs = {}
-      attrs = Hash[attributes.map { |k, a| [k, a.value] }] if respond_to? :attributes
+      attrs = Hash[attributes.map { |k, a|
+        k = key_map.fetch(k, k)
+        [k, a.value] if k
+      }.compact] if respond_to? :attributes
       c.each do |h|
         if h.is_a? String
           texts << h
@@ -57,8 +60,8 @@ class Nokogiri::XML::Node
         h.each do |name, value|
           if ct.key? name
             if ct[name].is_a? Array
-              ct[name] << value
-            else
+              ct[name] << value unless ct[name].include? value
+            elsif ct[name] != value
               ct[name] = [ct[name], value]
             end
           else
@@ -67,22 +70,25 @@ class Nokogiri::XML::Node
         end
       end
       ct.merge! attrs
-      if ct.empty?
-        if texts.count < 2
-          { name => texts.first }
+      key = key_map.fetch(name, name)
+      if key
+        if ct.empty?
+          if texts.count < 2
+            { key => texts.first }
+          else
+            { key => texts.uniq }
+          end
+        elsif texts.any?
+          { key => ct }
         else
-          { name => texts }
+          { key => ct }
         end
-      elsif texts.any?
-        { name => ct }
-      else
-        { name => ct }
       end
     end
   end
 
   def inspect
-    tree.inspect
+    "#<Node #{ name }: #{ tree.keys.join( ', ') }>"
   end
 end
 
@@ -128,6 +134,10 @@ class Hash
     values.any? { |v| v.is_a? String }
   end
 
+  def rel?
+    not record?
+  end
+
   def properties
     select { |k, v| v.is_a? String }
   end
@@ -141,11 +151,26 @@ class Hash
       add_vertex g, type, data
     end
   end
+
+  def key_tree
+    Hash[rels.map { |k, v|
+      kt = v.key_tree
+      if kt.length > 0 and kt.values.all? { |v| v == {} }
+        if kt.length == 1
+          [k, v.key_tree.keys.first]
+        else
+          [k, v.key_tree.keys]
+        end
+      else
+        [k, v.key_tree]
+      end
+    }]
+  end
 end
 
 
 class Nokogiri::XML::Text
-  def tree
+  def tree(_ = nil)
     text unless text =~ /\A\s*\Z/
   end
 
@@ -153,10 +178,3 @@ class Nokogiri::XML::Text
     text
   end
 end
-
-def parse_document(str, g)
-  doc = Nokogiri::XML str
-  $doc = doc.tree
-  #patent doc.at_css('us-bibliographic-data-grant'), g
-end
-
