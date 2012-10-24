@@ -21,7 +21,7 @@ module PacerXml
             ec = end_chunk.call line, lines
             lines = ec if ec.is_a? Array
             if ec
-              yield Nokogiri::XML(lines.join) if lines
+              yield Nokogiri::XML(lines.join).first_element_child if lines
               collecting = false
             else
               lines << line
