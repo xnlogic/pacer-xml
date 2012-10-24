@@ -73,7 +73,7 @@ module XmlRoute
   end
 
   def import(graph, rename = {})
-    to_route.map(route_name: 'import') { |node| BuildGraph.new(graph, node, rename) }.route
+    to_route.process(route_name: 'import') { |node| BuildGraph.new(graph, node, rename) }.route
   end
 end
 Pacer::RouteBuilder.current.element_types[:xml] = [XmlRoute]
