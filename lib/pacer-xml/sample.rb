@@ -22,10 +22,10 @@ module PacerXml
         Dir["/tmp/#{name}*"].each { |f| File.delete f }
       end
 
-      def xml(fn = nil)
+      def xml(fn = nil, *args)
         fn ||= a_week
         path = download_patent_grant fn
-        Pacer.xml path
+        Pacer.xml path, *args
       end
     end
   end

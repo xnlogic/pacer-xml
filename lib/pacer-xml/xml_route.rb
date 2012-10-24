@@ -6,10 +6,14 @@ module PacerXml
       end.route
     end
 
-    def import(graph, rename = {})
+    def import(graph, opts = {})
       to_route.process(route_name: 'import') do |node|
         graph.transaction do
-          BuildGraph.new(graph, node, rename)
+          if opts[:cache] == false
+            BuildGraph.new(graph, node, opts)
+          else
+            BuildGraphCached.new(graph, node, opts)
+          end
         end
       end.route
     end
