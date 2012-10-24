@@ -21,7 +21,7 @@ module PacerXml
             ec = end_chunk.call line, lines
             lines = ec if ec.is_a? Array
             if ec
-              yield Nokogiri::XML lines.join if lines
+              yield Nokogiri::XML(lines.join) if lines
               collecting = false
             else
               lines << line
@@ -38,7 +38,7 @@ module PacerXml
     end
 
     def to_route(opts = {})
-      super(opts.merge(route_name: 'xml', element_type: :xml)).route
+      super(opts.merge(info: file, element_type: :xml)).route
     end
 
     private
