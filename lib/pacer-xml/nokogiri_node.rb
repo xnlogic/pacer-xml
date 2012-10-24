@@ -15,7 +15,7 @@ end
 
 class Nokogiri::XML::Node
   def tree(key_map = {})
-    c = children.map { |x| x.tree(key_map) }.compact
+    c = elements.map { |x| x.tree(key_map) }.compact
     if c.empty?
       key_map.fetch(name, name)
     else
@@ -67,8 +67,21 @@ class Nokogiri::XML::Node
     if children.all? &:text?
       "#<Property #{ name }>"
     else
-      "#<Element #{ name } [#{ children.reject(&:text?).map(&:name).uniq.join(', ') }]>"
+      "#<Element #{ name } [#{ elements.map(&:name).uniq.join(', ') }]>"
     end
+  end
+
+  def description
+    s = if property?
+      "property"
+    elsif container?
+      'container'
+    elsif vertex?
+      'vertex'
+    else
+      'other'
+    end
+    "#{ s } #{ name }"
   end
 
   def property?
@@ -76,15 +89,17 @@ class Nokogiri::XML::Node
   end
 
   def container?
-    children.all? &:element?
+    not property? and
+      elements.map(&:name).uniq.length == 1 and
+      elements.all? { |e| e.vertex? or e.container? }
   end
 
-  def element?
+  def vertex?
     not property? and not container?
   end
 
   def properties
-    children.select(&:property?)
+    elements.select(&:property?)
   end
 
   def attrs
@@ -108,17 +123,26 @@ class Nokogiri::XML::Node
   end
 
   def one_rels
-    children.select &:element?
+    elements.select &:vertex?
+  end
+
+  def contained_rels
+    if container?
+      elements.select(&:vertex?) +
+        elements.select(&:container?).flat_map(&:contained_rels)
+    else
+      []
+    end
   end
 
   def many_rels
-    children.select &:container?
+    elements.select &:container?
   end
 
   def rels_hash
     result = Hash.new { |h, k| h[k] = [] }
     one_rels.each  { |e| result[e.name] << e }
-    many_rels.each { |e| result[e.name] += e.one_rels }
+    many_rels.each { |e| result[e.name] += e.contained_rels }
     result
   end
 end
