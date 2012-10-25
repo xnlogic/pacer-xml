@@ -3,7 +3,16 @@ require 'set'
 module PacerXml
   module Sample
     class << self
-      def load(*args)
+      # Will actually load 101. To avoid this side-effect of
+      # prefetching, the route should be defined as:
+      # xml_route.limit(100).import(...)
+      def load_100(*args)
+        i = importer(*args).limit(100)
+        i.run!
+        i.graph
+      end
+
+      def load_all(*args)
         i = importer(*args)
         i.run!
         i.graph
