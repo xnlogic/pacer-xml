@@ -13,12 +13,15 @@ module PacerXml
 
     attr_reader :graph
     attr_accessor :depth, :documents
-    attr_reader :rename, :html
+    attr_reader :rename, :html, :skip
 
     def initialize(graph, opts = {})
       @documents = 0
       @graph = graph
+      # treat tag as a property containing html
       @html = (opts[:html] || []).map(&:to_s).to_set
+      # skip property or tag
+      @skip = (opts[:skip] || []).map(&:to_s).to_set
       # rename type or property
       @rename = self.class.build_rename(opts[:rename])
     end
@@ -50,6 +53,9 @@ module PacerXml
         child = e.at_xpath(name)
         h[name] = child.inner_html if child
       end
+      skip.each do |name|
+        h.delete name
+      end
       h
     end
 
@@ -68,8 +74,8 @@ module PacerXml
       end
     end
 
-    def html?(e)
-      html.include? e.name
+    def skip?(e)
+      skip.include? e.name or html.include? e.name
     end
 
     def level
@@ -82,7 +88,7 @@ module PacerXml
 
   class BuildGraph < GraphVisitor
     def visit_element(e)
-      return nil if html? e
+      return nil if skip? e
       level do
         vertex = graph.create_vertex visit_vertex_fields(e)
         e.one_rels.each do |rel|
@@ -107,7 +113,7 @@ module PacerXml
     end
 
     def visit_many_rels(from_e, from, rel)
-      return nil if html? rel
+      return nil if skip? rel
       level do
         attrs = visit_edge_fields rel
         attrs.delete :type
