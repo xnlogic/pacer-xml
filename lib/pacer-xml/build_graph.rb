@@ -2,6 +2,15 @@ require 'set'
 
 module PacerXml
   class GraphVisitor
+    class << self
+      def build_rename(custom = {})
+        h = Hash.new { |h, k| h[k] = k.to_s }
+        h['id'] = 'identifier'
+        h.merge! custom if custom
+        h
+      end
+    end
+
     attr_reader :graph
     attr_accessor :depth, :documents
     attr_reader :rename, :html
@@ -10,7 +19,8 @@ module PacerXml
       @documents = 0
       @graph = graph
       @html = (opts[:html] || []).map(&:to_s).to_set
-      @rename = { 'id' => 'identifier' }.merge opts.fetch(:rename, {})
+      # rename type or property
+      @rename = self.class.build_rename(opts[:rename])
     end
 
     def build(doc)
@@ -29,13 +39,14 @@ module PacerXml
 
     def visit_vertex_fields(e)
       h = e.fields
+      h['type'] = rename[h['type']]
       rename.each do |from, to|
         if h.key? from
           h[to] = h.delete from
         end
       end
       html.each do |name|
-        name = name.to_s
+        name = rename[name]
         child = e.at_xpath(name)
         h[name] = child.inner_html if child
       end
@@ -72,8 +83,6 @@ module PacerXml
   class BuildGraph < GraphVisitor
     def visit_element(e)
       return nil if html? e
-      tell e.parent.description if e.name == 'p'
-      raise '??' if e.name == 'p'
       level do
         vertex = graph.create_vertex visit_vertex_fields(e)
         e.one_rels.each do |rel|
@@ -93,7 +102,7 @@ module PacerXml
     def visit_one_rel(e, from, rel)
       to = visit_element(rel)
       if from and to
-        graph.create_edge nil, from, to, rel.name
+        graph.create_edge nil, from, to, rename[rel.name]
       end
     end
 
@@ -111,7 +120,7 @@ module PacerXml
     def visit_many_rel(from_e, from, rel, to_e, attrs)
       to = visit_element(to_e)
       if from and to
-        graph.create_edge nil, from, to, rel.name, attrs
+        graph.create_edge nil, from, to, rename[rel.name], attrs
       end
     end
   end
@@ -156,15 +165,15 @@ module PacerXml
     end
 
     def cacheable?(e)
-      not cache[:skip].include?(e.name) and not visit_vertex_fields(e).empty?
+      not cache[:skip].include?(rename[e.name]) and not visit_vertex_fields(e).empty?
     end
 
     def get_cached(e)
       if cacheable?(e)
-        id = cache[e.name][visit_vertex_fields(e).hash]
+        id = cache[rename[e.name]][visit_vertex_fields(e).hash]
         #tell "cache hit: #{ e.description }" if el
         if id
-          cache[:hits][e.name] += 1
+          cache[:hits][rename[e.name]] += 1
           graph.vertex(id)
         end
       end
@@ -173,13 +182,13 @@ module PacerXml
     def set_cached(e, el)
       return unless el
       if cacheable?(e)
-        ct = cache[e.name]
+        ct = cache[rename[e.name]]
         kill = cache[:kill]
-        if kill and cache[:hits][e.name] == 0 and ct.length > kill
+        if kill and cache[:hits][rename[e.name]] == 0 and ct.length > kill
           tell "cache kill #{ e.description }"
-          cache[:skip] << e.name
+          cache[:skip] << rename[e.name]
           cache[:size] -= ct.length
-          cache[e.name] = []
+          cache[rename[e.name]] = []
         else
           ct[visit_vertex_fields(e).hash] = el.element_id
           cache[:size] += 1
