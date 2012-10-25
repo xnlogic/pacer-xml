@@ -11,6 +11,9 @@ module PacerXml
         builder = BuildGraph.new(graph, opts)
       else
         builder = BuildGraphCached.new(graph, opts)
+        if opts[:cache].is_a? Hash
+          builder.cache.merge! opts[:cache]
+        end
       end
       to_route.process(route_name: 'import') do |node|
         graph.transaction do
