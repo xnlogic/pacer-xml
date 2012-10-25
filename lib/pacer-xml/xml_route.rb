@@ -7,14 +7,14 @@ module PacerXml
     end
 
     def import(graph, opts = {})
-      cache = opts[:cache]
+      if opts[:cache] == false
+        builder = BuildGraph.new(graph, opts)
+      else
+        builder = BuildGraphCached.new(graph, opts)
+      end
       to_route.process(route_name: 'import') do |node|
         graph.transaction do
-          if opts[:cache] == false
-            BuildGraph.new(graph, node, opts)
-          else
-            cache = BuildGraphCached.new(graph, node, opts.merge(cache: cache)).cache
-          end
+          builder.build node
         end
       end.route
     end

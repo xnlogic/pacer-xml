@@ -3,13 +3,18 @@ require 'set'
 module PacerXml
   class GraphVisitor
     attr_reader :graph
-    attr_accessor :depth
+    attr_accessor :depth, :documents
     attr_reader :rename, :html
 
-    def initialize(graph, doc, opts = {})
+    def initialize(graph, opts = {})
+      @documents = 0
       @graph = graph
       @html = (opts[:html] || []).map(&:to_s).to_set
       @rename = { 'id' => 'identifier' }.merge opts.fetch(:rename, {})
+    end
+
+    def build(doc)
+      self.documents += 1
       self.depth = 0
       if doc.is_a? Nokogiri::XML::Document
         visit_element doc.first_element_child
@@ -113,27 +118,40 @@ module PacerXml
 
 
   class BuildGraphCached < BuildGraph
+    class << self
+      def empty_cache
+        cache = Hash.new { |h, k| h[k] = {} }
+        cache[:hits] = Hash.new 0
+        cache[:size] = 0
+        cache[:kill] = nil
+        cache[:skip] = Set[]
+        cache
+      end
+    end
+
     attr_reader :cache
     attr_accessor :fields
 
-    def initialize(graph, doc, opts = {})
+    def initialize(graph, opts = {})
       if opts[:cache]
         @cache = opts[:cache]
       else
-        @cache = Hash.new { |h, k| h[k] = {} }
-        @cache[:hits] = Hash.new 0
-        @cache[:size] = 0
-        @cache[:kill] = nil
-        @cache[:skip] = Set[]
+        @cache = self.class.empty_cache
       end
       super
+    end
+
+    def build(doc)
+      super
       #tell "CACHE size #{ cache[:size] },  hits:"
-      if
-      tell '-----------------'
-      cache.each do |k, adds|
-        next unless k.is_a? String
-        hits = cache[:hits][k]
-        tell("%40s: %6s / %6s --- %0.5f" % [k, hits, adds, (hits/adds.to_f)])
+      if documents % 100 = 99
+        tell '-----------------'
+        cache.each do |k, adds|
+          next unless k.is_a? String
+          adds = adds.length
+          hits = cache[:hits][k]
+          tell("%40s: %6s / %6s = %5.4f" % [k, hits, adds, (hits/adds.to_f)])
+        end
       end
     end
 
