@@ -153,7 +153,7 @@ module PacerXml
     def build(doc)
       super
       #tell "CACHE size #{ cache[:size] },  hits:"
-      if documents % 100 = 99
+      if cache[:stats] and documents % 100 == 99
         tell '-----------------'
         cache.each do |k, adds|
           next unless k.is_a? String
