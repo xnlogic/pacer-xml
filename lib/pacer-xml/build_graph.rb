@@ -157,7 +157,7 @@ module PacerXml
     end
 
     def build(doc)
-      super
+      result = super
       #tell "CACHE size #{ cache[:size] },  hits:"
       if cache[:stats] and documents % 100 == 99
         tell '-----------------'
@@ -168,6 +168,7 @@ module PacerXml
           tell("%40s: %6s / %6s = %5.4f" % [k, hits, adds, (hits/adds.to_f)])
         end
       end
+      result
     end
 
     def cacheable?(e)

@@ -15,9 +15,9 @@ module PacerXml
           builder.cache.merge! opts[:cache]
         end
       end
-      to_route.process(route_name: 'import') do |node|
+      to_route.map(route_name: 'import', graph: graph, element_type: :vertex) do |node|
         graph.transaction do
-          builder.build node
+          builder.build(node)
         end
       end.route
     end
