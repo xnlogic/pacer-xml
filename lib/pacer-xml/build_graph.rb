@@ -8,8 +8,7 @@ module PacerXml
 
     def initialize(graph, doc, opts = {})
       @graph = graph
-      @html = opts.fetch(:html, []).to_set
-
+      @html = (opts[:html] || []).map(&:to_s).to_set
       @rename = { 'id' => 'identifier' }.merge opts.fetch(:rename, {})
       self.depth = 0
       if doc.is_a? Nokogiri::XML::Document
@@ -45,7 +44,7 @@ module PacerXml
     end
 
     def tell(x)
-      print('  ' * depth)
+      print('  ' * depth) if depth
       if x.is_a? Hash or x.is_a? Array
         p x
       else
@@ -67,7 +66,9 @@ module PacerXml
 
   class BuildGraph < GraphVisitor
     def visit_element(e)
-      return if html? e
+      return nil if html? e
+      tell e.parent.description if e.name == 'p'
+      raise '??' if e.name == 'p'
       level do
         vertex = graph.create_vertex visit_vertex_fields(e)
         e.one_rels.each do |rel|
@@ -92,6 +93,7 @@ module PacerXml
     end
 
     def visit_many_rels(from_e, from, rel)
+      return nil if html? rel
       level do
         attrs = visit_edge_fields rel
         attrs.delete :type
@@ -111,27 +113,60 @@ module PacerXml
 
 
   class BuildGraphCached < BuildGraph
-    attr_reader :cache, :skip_cache
+    attr_reader :cache
     attr_accessor :fields
 
     def initialize(graph, doc, opts = {})
-      @cache = opts.fetch :cache, Hash.new { |h, k| h[k] = {} }
-      @skip_cache = opts.fetch :skip_cache, Set[]
+      if opts[:cache]
+        @cache = opts[:cache]
+      else
+        @cache = Hash.new { |h, k| h[k] = {} }
+        @cache[:hits] = Hash.new 0
+        @cache[:size] = 0
+        @cache[:kill] = nil
+        @cache[:skip] = Set[]
+      end
       super
+      #tell "CACHE size #{ cache[:size] },  hits:"
+      if
+      tell '-----------------'
+      cache.each do |k, adds|
+        next unless k.is_a? String
+        hits = cache[:hits][k]
+        tell("%40s: %6s / %6s --- %0.5f" % [k, hits, adds, (hits/adds.to_f)])
+      end
     end
 
     def cacheable?(e)
-      not skip_cache.include? e.name and not visit_vertex_fields(e).empty?
+      not cache[:skip].include?(e.name) and not visit_vertex_fields(e).empty?
     end
 
     def get_cached(e)
-      el = cache[e.name][visit_vertex_fields(e)] if cacheable?(e)
-      #tell "cache hit: #{ e.description }" if el
-      el
+      if cacheable?(e)
+        id = cache[e.name][visit_vertex_fields(e).hash]
+        #tell "cache hit: #{ e.description }" if el
+        if id
+          cache[:hits][e.name] += 1
+          graph.vertex(id)
+        end
+      end
     end
 
     def set_cached(e, el)
-      cache[e.name][visit_vertex_fields(e)] = el if cacheable?(e)
+      return unless el
+      if cacheable?(e)
+        ct = cache[e.name]
+        kill = cache[:kill]
+        if kill and cache[:hits][e.name] == 0 and ct.length > kill
+          tell "cache kill #{ e.description }"
+          cache[:skip] << e.name
+          cache[:size] -= ct.length
+          cache[e.name] = []
+        else
+          ct[visit_vertex_fields(e).hash] = el.element_id
+          cache[:size] += 1
+        end
+      end
       el
     end
 

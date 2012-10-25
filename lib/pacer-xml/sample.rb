@@ -6,6 +6,8 @@ module PacerXml
       end
 
       def download_patent_grant(fn)
+        puts "Downloading a sample xml file from"
+        puts "http://www.google.com/googlebooks/uspto-patents-grants-biblio.html"
         name, week = fn.split '_'
         result = "/tmp/#{name}.xml"
         Dir.chdir '/tmp' do
@@ -17,7 +19,8 @@ module PacerXml
         result
       end
 
-      def cleanup(fn)
+      def cleanup(fn = nil)
+        fn ||= a_week
         name, week = fn.split '_'
         Dir["/tmp/#{name}*"].each { |f| File.delete f }
       end
