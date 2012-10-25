@@ -5,10 +5,8 @@ module PacerXml
         builder = BuildGraph.new(graph, opts)
       else
         builder = BuildGraphCached.new(graph, opts)
-        if opts[:cache].is_a? Hash
-          builder.cache.merge! opts[:cache]
-        end
       end
+      graph.vertex_name ||= proc { |v| v[:type] }
       to_route.map(route_name: 'import', graph: graph, element_type: :vertex) do |node|
         graph.transaction do
           builder.build(node)

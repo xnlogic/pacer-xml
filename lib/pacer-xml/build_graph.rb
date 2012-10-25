@@ -149,7 +149,7 @@ module PacerXml
 
     def initialize(graph, opts = {})
       if opts[:cache]
-        @cache = opts[:cache]
+        @cache = self.class.empty_cache.merge! opts[:cache]
       else
         @cache = self.class.empty_cache
       end

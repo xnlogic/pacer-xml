@@ -25,7 +25,7 @@ module PacerXml
       # xml is particularly hairy.
       def importer(graph = nil, fn = nil, start_rule = nil, end_rule = nil)
         html = [:abstract]
-        renames = {
+        rename = {
           'classification-national' => 'classification',
           'assistant-examiner' => 'examiner',
           'primary-examiner' => 'examiner',
@@ -42,7 +42,7 @@ module PacerXml
         xml_route = xml(fn, start_rule, end_rule)
         xml_route.
           process { print '.' }.
-          import(graph, html: html, renames: renames, cache: cache)
+          import(graph, html: html, rename: rename, cache: cache)
       end
 
       def xml(fn = nil, *args)
