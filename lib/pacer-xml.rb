@@ -32,12 +32,17 @@ end
 require_relative 'pacer-xml/build_graph'
 require_relative 'pacer-xml/nokogiri_node'
 require_relative 'pacer-xml/xml_route'
+require_relative 'pacer-xml/string_route'
 require_relative 'pacer-xml/sample'
 
 module Pacer
   class << self
-    def xml(file, start_chunk = nil, end_chunk = nil)
-      PacerXml::XmlStream.new(file, start_chunk, end_chunk).to_route
+    def xml(file, enter = nil, leave = nil)
+      if file.is_a? String
+        file = File.open '/tmp/ipgb20120103.xml'
+      end
+      lines = f.each_line.to_route(element_type: :string, info: 'lines').route
+      lines.xml_stream(enter, leave).route
     end
   end
 end
