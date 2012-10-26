@@ -32,7 +32,6 @@ end
 require_relative 'pacer-xml/build_graph'
 require_relative 'pacer-xml/nokogiri_node'
 require_relative 'pacer-xml/xml_route'
-require_relative 'pacer-xml/xml_stream'
 require_relative 'pacer-xml/sample'
 
 module Pacer
