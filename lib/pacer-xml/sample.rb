@@ -18,6 +18,23 @@ module PacerXml
         i.graph
       end
 
+      def structure(g)
+        Pacer::Utils::GraphAnalysis.structure g
+      end
+
+      def structure!(g, fn = 'patent-structure.graphml')
+        s = structure g
+        if fn
+          e = Pacer::Utils::YFilesExport.new
+          e.vertex_label = s.vertex_name
+          e.edge_label = s.edge_name
+          e.export s, fn
+          puts
+          puts "Wrote #{ fn }"
+        end
+        s
+      end
+
       # Sample of using the xml import function with some advanced options to
       # clean up the resulting graph.
       #
@@ -75,17 +92,6 @@ module PacerXml
           end
         end
         result
-      end
-
-      def structure!(g, fn = 'patent-structure.graphml')
-        structure = Pacer::Utils::GraphAnalysis.structure g
-        if fn
-          e = Pacer::Utils::YFilesExport.new
-          e.vertex_label = structure.vertex_name
-          e.edge_label = structure.edge_name
-          e.export structure, fn
-        end
-        structure
       end
     end
   end
