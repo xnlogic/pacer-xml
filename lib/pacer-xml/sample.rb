@@ -76,6 +76,17 @@ module PacerXml
         end
         result
       end
+
+      def structure!(g, fn = 'patent-structure.graphml')
+        structure = Pacer::Utils::GraphAnalysis.structure g
+        if fn
+          e = Pacer::Utils::YFilesExport.new
+          e.vertex_label = structure.vertex_name
+          e.edge_label = structure.edge_name
+          e.export structure, fn
+        end
+        structure
+      end
     end
   end
 end
