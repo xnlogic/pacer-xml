@@ -2,14 +2,14 @@ module Pacer
   module Core
     module StringRoute
       def xml_stream(enter = nil, leave = nil)
-        enter
-        enter = build_rule :enter, enter || /<\?xml/
+        enter ||= /<\?xml/
         leave ||= enter if enter.is_a? Regexp
+        enter = build_rule :enter, enter
         leave = build_rule :leave, leave
-        reducer = lines.reducer(element_type: :array, enter: enter, leave: leave) do |s, lines|
+        r = reducer(element_type: :array, enter: enter, leave: leave) do |s, lines|
           lines << s
-        end
-        joined = reducer.map(element_type: :string, info: 'join', &:join).route
+        end.route
+        joined = r.map(element_type: :string, info: 'join', &:join).route
         joined.xml
       end
 
@@ -31,7 +31,7 @@ module Pacer
           rule
         else
           proc do |line|
-            [] if line.nil or rule =~ line
+            [] if line.nil? or rule =~ line
           end
         end
       end

@@ -41,7 +41,7 @@ module Pacer
       if file.is_a? String
         file = File.open '/tmp/ipgb20120103.xml'
       end
-      lines = f.each_line.to_route(element_type: :string, info: 'lines').route
+      lines = file.each_line.to_route(element_type: :string, info: 'lines').route
       lines.xml_stream(enter, leave).route
     end
   end
