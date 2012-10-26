@@ -21,7 +21,7 @@ There are 2 key methods:
 
 `Pacer.xml(filename, start_section, end_section)`
 
-``
+```
 filename: String
 start_section: String | Symbol | Regex | Proc  (optional)
   String | Symbol  name of xml tag to use as the root node of each
@@ -39,7 +39,7 @@ end_section:   Proc  (optional)
                      current line is the last line in a section.
                    - if it results in an Array, pass the result of
                      joining the array to Nokogiri for the next section.
-``
+```
 
 If the parser is building a section when it gets to the end of the file,
 it will call the `end_section.call(nil, lines)`. To prevent the final
@@ -52,7 +52,7 @@ delimited by the presence of `<?xml`.
 
 `xml_route.import(graph, opts = {})`
 
-``
+```
 graph: PacerGraph   The graph to load the data into.
 opts:  Hash
   :cache  false | Hash
@@ -61,7 +61,7 @@ opts:  Hash
   :rename Hash         map of { 'old-name' => 'new-name' }
   :html   Array        set of tag names to treat as containing HTML
   :skip   Array        set of tag or attribute names to skip
-``
+```
 
 Baked-in Sample
 ---------------
@@ -78,11 +78,11 @@ tool.
 I encourage you to check out the sample data, simply install this gem
 and start up IRB, then:
 
-``ruby
+```ruby
 require 'pacer-xml'
 
 graph = PacerXml::Sample.load_100
-``
+```
 
 That will download and extract a 100M xml file full of 2 weeks of patent
 grants data, then create a graph with the first 100 patents, including
@@ -98,11 +98,11 @@ below, we'll see the same results as the GraphAnalysis, but it will
 export a graphml file that we can load into yEd, an excellent free graph
 visualization tool:
 
-``ruby
+```ruby
 PacerXml::Sample.structure! graph
 # ... lots of output ...
 #=> #<PacerGraph tinkergraph[vertices:90 edges:112]
-``
+```
 
 The new file in your working directory is called
 `patent-structure.graphml`. Open that file in yEd. You'll see a single
@@ -135,8 +135,8 @@ More
 
 To play with the xml tools themselves, try out the following commands:
 
-``
+```ruby
 xml_route = PacerXml::Sample.xml(nil, start_rule, end_rule)
 
 importer = PacerXml::Sample.importer
-``
+```
