@@ -116,6 +116,9 @@ box... Fortunately, laying it out is fairly simple:
 
 Cool!
 
+Contextual Help
+---------------
+
 Back to Pacer, there's lots to learn about Pacer. The best way to do
 that is to use Pacer's own inline help:
 
@@ -126,3 +129,14 @@ that is to use Pacer's own inline help:
 
 Contextual help was only added recently so it's not complete yet but
 it's developing quickly and contributions are very welcome!
+
+More
+-----
+
+To play with the xml tools themselves, try out the following commands:
+
+``
+xml_route = PacerXml::Sample.xml(nil, start_rule, end_rule)
+
+importer = PacerXml::Sample.importer
+``
