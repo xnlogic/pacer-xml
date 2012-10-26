@@ -34,6 +34,19 @@ module PacerXml
             end
           end
         end
+        if collecting
+          ec = end_chunk.call nil, lines
+          lines = ec if ec.is_a? Array
+          if lines
+            begin
+              xml = Nokogiri::XML(lines.join).first_element_child
+            rescue StandardError
+              # ignore xml errors here
+            else
+              yield xml
+            end
+          end
+        end
       end
     end
 
