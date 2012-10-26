@@ -19,10 +19,12 @@ I've used pacer-xml there.
 
 There are 2 key methods:
 
-`Pacer.xml(filename, start_section, end_section)`
+`Pacer.xml(file, start_section = nil, end_section = nil)`
 
 ```
-filename: String
+file:          String | IO
+  String           path to an xml file to read
+  IO               an open resource that responds to #each_line
 start_section: String | Symbol | Regex | Proc  (optional)
   String | Symbol  name of xml tag to use as the root node of each
                    section of xml. The end_section will automatically be
