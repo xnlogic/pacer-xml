@@ -142,3 +142,27 @@ xml_route = PacerXml::Sample.xml(nil, start_rule, end_rule)
 
 importer = PacerXml::Sample.importer
 ```
+
+Performance Notes
+-----------------
+
+This section uses the `PacerXml::Sample.load_all` method. The `load_100`
+method runs in just a couple of seconds.
+
+The default sample file contains 3019840 lines representing 4479
+documents. Running under the simple `bundle exec irb` command on a MBP
+2.3 GHz i7, here are some quick timings (in seconds) for operations on
+the entire file:
+
+=> 8.36    iterate through 3019840 lines
+=> 28.534  reduce the lines to 4479 arrays of lines
+=> 29.753  join each array of lines into a string
+=> 34.788  parse each string into a Nokogiri XML document
+=> 812.732 create a graph, producing 494659 vertices and 629690 edges
+
+Starting up with `bundle exec jruby --server -J-Xmx2048m -S irb`
+slightly improves performance of the import but does not appear to
+affect Pacer or Nokogiri's performance:
+
+=> 34.857  parsed XML documents
+=> 780.828 created graph

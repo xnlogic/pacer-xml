@@ -12,8 +12,16 @@ module PacerXml
         i.graph
       end
 
-      def load_all(*args)
-        i = importer(*args)
+      # Uses a Neo4j graph because the data is too big to fit in memory
+      # without configuring the JVM to use more than its small default
+      # footprint.
+      #
+      # bundle exec jruby -J-Xmx2048m -S irb
+      def load_all(graph = nil, *args)
+        require 'pacer-neo4j'
+        n = Time.now.to_i % 1000000
+        graph ||= Pacer.neo4j "sample.#{n}.graph"
+        i = importer(graph, *args)
         i.run!
         i.graph
       end
