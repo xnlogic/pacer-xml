@@ -16,6 +16,7 @@ module PacerXml
       # without configuring the JVM to use more than its small default
       # footprint.
       #
+      # Alternatively, to start the JVM with more memory, try:
       # bundle exec jruby -J-Xmx2048m -S irb
       def load_all(graph = nil, *args)
         require 'pacer-neo4j'
