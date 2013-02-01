@@ -39,7 +39,7 @@ module Pacer
   class << self
     def xml(file, enter = nil, leave = nil)
       if file.is_a? String
-        file = File.open '/tmp/ipgb20120103.xml'
+        file = File.open file
       end
       lines = file.each_line.to_route(element_type: :string, info: 'lines').route
       lines.xml_stream(enter, leave).route
