@@ -13,13 +13,16 @@ module PacerXml
 
     attr_reader :graph
     attr_accessor :depth, :documents
-    attr_reader :rename, :html, :skip
+    attr_reader :rename, :html, :skip, :with_body
 
     def initialize(graph, opts = {})
       @documents = 0
       @graph = graph
       # treat tag as a property containing html
       @html = (opts[:html] || []).map(&:to_s).to_set
+      # capture the body into a body property in addition to any tags it contains.
+      @with_body = (opts[:with_body] || []).map(&:to_s).to_set
+
       # skip property or tag
       @skip = (opts[:skip] || []).map(&:to_s).to_set
       # rename type or property
@@ -42,6 +45,7 @@ module PacerXml
 
     def visit_vertex_fields(e)
       h = e.fields
+      h['body'] = e.inner_html if with_body? e
       h['type'] = rename[h['type']]
       rename.each do |from, to|
         if h.key? from
@@ -76,6 +80,10 @@ module PacerXml
 
     def skip?(e)
       skip.include? e.name or html.include? e.name
+    end
+
+    def with_body?(e)
+      with_body.include? e.name
     end
 
     def level
@@ -116,6 +124,7 @@ module PacerXml
       return nil if skip? rel
       level do
         attrs = visit_edge_fields rel
+        rel[:body] = rel.inner_text if with_body? rel
         attrs.delete :type
         rel.contained_rels.map do |to_e|
           visit_many_rel(from_e, from, rel, to_e, attrs)
