@@ -37,12 +37,12 @@ require_relative 'pacer-xml/sample'
 
 module Pacer
   class << self
-    def xml(file, enter = nil, leave = nil)
+    def xml(file, enter = nil, leave = nil, &block)
       if file.is_a? String
         file = File.open file
       end
       lines = file.each_line.to_route(element_type: :string, info: 'lines').route
-      lines.xml_stream(enter, leave).route
+      lines.xml_stream(enter, leave, &block).route
     end
   end
 end

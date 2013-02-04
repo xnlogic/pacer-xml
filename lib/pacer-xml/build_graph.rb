@@ -168,15 +168,15 @@ module PacerXml
     def build(doc)
       result = super
       #tell "CACHE size #{ cache[:size] },  hits:"
-      if cache[:stats] and documents % 100 == 99
-        tell '-----------------'
-        cache.each do |k, adds|
-          next unless k.is_a? String
-          adds = adds.length
-          hits = cache[:hits][k]
-          tell("%40s: %6s / %6s = %5.4f" % [k, hits, adds, (hits/adds.to_f)])
-        end
-      end
+     #if cache[:stats] and documents % 100 == 99
+     #  tell '-----------------'
+     #  cache.each do |k, adds|
+     #    next unless k.is_a? String
+     #    adds = adds.length
+     #    hits = cache[:hits][k]
+     #    tell("%40s: %6s / %6s = %5.4f" % [k, hits, adds, (hits/adds.to_f)])
+     #  end
+     #end
       result
     end
 
@@ -201,7 +201,7 @@ module PacerXml
         ct = cache[rename[e.name]]
         kill = cache[:kill]
         if kill and cache[:hits][rename[e.name]] == 0 and ct.length > kill
-          tell "cache kill #{ e.description }"
+          #tell "cache kill #{ e.description }"
           cache[:skip] << rename[e.name]
           cache[:size] -= ct.length
           cache[rename[e.name]] = []

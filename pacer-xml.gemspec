@@ -15,6 +15,8 @@ Gem::Specification.new do |s|
   s.add_dependency 'pacer', PacerXml::PACER_VERSION
   s.add_dependency 'pacer-neo4j', ">= 2.1"
   s.add_dependency 'nokogiri'
+  s.add_development_dependency 'awesome_print', '0.4.0'
+  
 
   s.rubyforge_project = "pacer-xml"
 

@@ -1,7 +1,7 @@
 module Pacer
   module Core
     module StringRoute
-      def xml_stream(enter = nil, leave = nil)
+      def xml_stream(enter = nil, leave = nil, &block)
         enter ||= /<\?xml/
         leave ||= enter
         enter = build_rule :enter, enter
@@ -10,6 +10,7 @@ module Pacer
           lines << s
         end.route
         joined = r.map(element_type: :string, info: 'join', &:join).route
+        joined = block.call joined if block
         joined.xml
       end
 
