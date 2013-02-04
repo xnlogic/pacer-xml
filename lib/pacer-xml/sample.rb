@@ -132,7 +132,7 @@ module PacerXml
         if args[:path]
           args[:path]
         else
-          "/tmp/#{patent_file(args)}.xml"
+          "/tmp/#{patent_file(args).sub(/_wk\d+/, '')}.xml"
         end
       end
 
